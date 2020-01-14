@@ -1,8 +1,8 @@
-package easy_go
+package parse
 
 import (
 	"fmt"
-	"io"
+	"github.com/yenole/easy-go"
 	"net/http"
 	"testing"
 )
@@ -20,14 +20,10 @@ func (r ReqLogin) handleLogin2(token string, a int32) (interface{}, error) {
 	return 111111, nil
 }
 
-func TestNewEasyGo(t *testing.T) {
-	NewEasyGo().Get(`/api/`, func(w http.ResponseWriter, r *http.Request) {
-		_, _ = io.WriteString(w, "hello")
-	})
+func TestParse(t *testing.T) {
+	easy_go.NewEasyGo().Post(`/api/login`, easy_go.JSON(JSON(ReqLogin{}.handleLogin, (*ReqLogin)(nil), "token", "a")))
 
-	NewEasyGo().Post(`/api/login`, JSON(ParseJSON(ReqLogin{}.handleLogin, (*ReqLogin)(nil), "token", "a")))
-
-	NewEasyGo().Get(`/api/login2`, JSON(ParseParam(ReqLogin{}.handleLogin2, "token", "a")))
+	easy_go.NewEasyGo().Get(`/api/login2`, easy_go.JSON(Param(ReqLogin{}.handleLogin2, "token", "a")))
 
 	http.ListenAndServe(":8080", nil)
 }
