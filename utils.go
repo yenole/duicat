@@ -1,29 +1,155 @@
 package easy_go
 
-import "net/http"
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"reflect"
+)
 
-func ParamJSON(handle func(data interface{}) (interface{}, error)) func(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-	return func(w http.ResponseWriter, r *http.Request) (i interface{}, err error) {
-		return nil, nil
+func ParseParam(handle interface{}, params ...string) HandlerRenderFunc {
+	handleType := reflect.TypeOf(handle)
+	if handleType.Kind() != reflect.Func {
+		panic("handle is not a function")
+	}
+
+	if handleType.NumIn() != len(params) {
+		panic("number of handles and params do not match")
+	}
+
+	if handleType.NumOut() != 2 || handleType.Out(0).Kind() != reflect.Interface && handleType.Out(1).Kind() != reflect.Interface {
+		panic("handle return parameter error")
+	}
+
+	handleValue := reflect.ValueOf(handle)
+
+	return func(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+		values, err := fetchParams(r, handleType, 0, params...)
+		if err != nil {
+			return nil, err
+		}
+
+		results := handleValue.Call(values)
+
+		if results[1].IsNil() {
+			return results[0].Interface(), nil
+		}
+
+		return nil, results[1].Interface().(error)
 	}
 }
 
-func JSON(handle func(w http.ResponseWriter, r *http.Request) (interface{}, error)) func(w http.ResponseWriter, r *http.Request) {
+func ParseJSON(handle interface{}, json interface{}, params ...string) HandlerRenderFunc {
+	handleType := reflect.TypeOf(handle)
+	if handleType.Kind() != reflect.Func {
+		panic("handle is not a function")
+	}
+
+	if handleType.NumIn() != len(params)+1 {
+		panic("number of handles and params do not match")
+	}
+
+	if handleType.NumOut() != 2 || handleType.Out(0).Kind() != reflect.Interface && handleType.Out(1).Kind() != reflect.Interface {
+		panic("handle return parameter error")
+	}
+
+	jsonType := reflect.TypeOf(json)
+	handleValue := reflect.ValueOf(handle)
+
+	return func(w http.ResponseWriter, r *http.Request) (interface{}, error) {
+		data := reflect.New(jsonType)
+
+		err := fetchBody2Json(r.Body, data.Interface())
+		if err != nil {
+			return nil, err
+		}
+
+		values, err := fetchParams(r, handleType, 1, params...)
+		if err != nil {
+			return nil, err
+		}
+
+		results := handleValue.Call(append([]reflect.Value{data.Elem()}, values...))
+
+		if results[1].IsNil() {
+			return results[0].Interface(), nil
+		}
+
+		return nil, results[1].Interface().(error)
+	}
+}
+
+func JSON(handle HandlerRenderFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		stdout, stderr := bytes.NewBuffer([]byte{}), bytes.NewBuffer([]byte{})
+
+		defer func() {
+			if stderr.Len() > 0 {
+				_, _ = io.WriteString(w, fmt.Sprintf(`{"ret":false,"data":"%v"}`, stderr.String()))
+			} else if stdout.Len() > 0 {
+				_, _ = io.WriteString(w, fmt.Sprintf(`{"ret":true,"data":%v}`, stdout.String()))
+			} else {
+				_, _ = io.WriteString(w, `{"ret":true}`)
+			}
+		}()
+
+		defer func() {
+			if err := recover(); err != nil {
+				stderr.WriteString(fmt.Sprint(err))
+			}
+		}()
+
+		data, err := handle(w, r)
+		if err != nil {
+			stderr.WriteString(err.Error())
+			return
+		}
+
+		if data == nil {
+			return
+		}
+
+		byts, err := json.Marshal(data)
+		if err != nil {
+			stderr.WriteString(err.Error())
+		} else {
+			stdout.Write(byts)
+		}
 
 	}
 }
 
-func Template(tmpl string, handle interface{}) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+func fetchBody2Json(body io.ReadCloser, raw interface{}) error {
+	byts, err := ioutil.ReadAll(body)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(byts, raw)
+}
+
+func fetchParams(r *http.Request, el reflect.Type, skip int, params ...string) ([]reflect.Value, error) {
+	query, err := url.ParseQuery(r.URL.RawQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	values := make([]reflect.Value, el.NumIn()-skip)
+	for i := skip; i < el.NumIn(); i++ {
+		if el.In(i).Kind() == reflect.String {
+			values[i-skip] = reflect.ValueOf(query.Get(params[i-skip]))
+		} else {
+			var ret = reflect.New(el.In(i))
+			err := json.Unmarshal([]byte(query.Get(params[i-skip])), ret.Interface())
+			if err != nil {
+				return nil, err
+			}
+			values[i-skip] = ret.Elem()
+		}
 
 	}
-}
-
-func Plain() {
-
-}
-
-func HTML() {
-
+	return values, nil
 }
