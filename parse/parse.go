@@ -67,7 +67,7 @@ func JSON(handle interface{}, json interface{}, params ...string) easy_go.Handle
 			return nil, err
 		}
 
-		values, err := fetchParams(r, handleType, 1, params...)
+		values, err := fetchParams(r, handleType, 1, params)
 		if err != nil {
 			return nil, err
 		}
@@ -90,7 +90,7 @@ func fetchBody2Json(body io.ReadCloser, raw interface{}) error {
 	return json.Unmarshal(byts, raw)
 }
 
-func fetchParams(r *http.Request, el reflect.Type, skip int, params ...string) ([]reflect.Value, error) {
+func fetchParams(r *http.Request, el reflect.Type, skip int, params []string) ([]reflect.Value, error) {
 	query, err := url.ParseQuery(r.URL.RawQuery)
 	if err != nil {
 		return nil, err
