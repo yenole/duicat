@@ -2,7 +2,7 @@ package parse
 
 import (
 	"encoding/json"
-	"github.com/yenole/easy-go"
+	"github.com/yenole/duicat"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -10,7 +10,7 @@ import (
 	"reflect"
 )
 
-func Param(handle interface{}, params ...string) easy_go.HandlerRenderFunc {
+func Param(handle interface{}, params ...string) duicat.HandlerRenderFunc {
 	handleType := reflect.TypeOf(handle)
 	if handleType.Kind() != reflect.Func {
 		panic("handle is not a function")
@@ -42,7 +42,7 @@ func Param(handle interface{}, params ...string) easy_go.HandlerRenderFunc {
 	}
 }
 
-func JSON(handle interface{}, json interface{}, params ...string) easy_go.HandlerRenderFunc {
+func JSON(handle interface{}, json interface{}, params ...string) duicat.HandlerRenderFunc {
 	handleType := reflect.TypeOf(handle)
 	if handleType.Kind() != reflect.Func {
 		panic("handle is not a function")

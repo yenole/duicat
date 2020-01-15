@@ -1,7 +1,7 @@
 package parse
 
 import (
-	"github.com/yenole/easy-go"
+	"github.com/yenole/duicat"
 	"net/http"
 	"testing"
 )
@@ -20,9 +20,9 @@ func (r ReqLogin) handleLogin2(token string, a int32) (interface{}, error) {
 }
 
 func TestParse(t *testing.T) {
-	easy_go.NewEasyGo().Post(`/api/login`, easy_go.JSON(JSON(ReqLogin{}.handleLogin, (*ReqLogin)(nil), "token", "a")))
+	duicat.NewDuiCat().Post(`/api/login`, duicat.JSON(JSON(ReqLogin{}.handleLogin, (*ReqLogin)(nil), "token", "a")))
 
-	easy_go.NewEasyGo().Get(`/api/login2`, easy_go.JSON(Param(ReqLogin{}.handleLogin2, "token", "a")))
+	duicat.NewDuiCat().Get(`/api/login2`, duicat.JSON(Param(ReqLogin{}.handleLogin2, "token", "a")))
 
 	http.ListenAndServe(":8080", nil)
 }

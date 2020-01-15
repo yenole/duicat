@@ -1,3 +1,3 @@
-module github.com/yenole/easy-go
+module github.com/yenole/duicat
 
 go 1.13
