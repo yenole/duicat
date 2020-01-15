@@ -1,18 +1,20 @@
-package duicat
+package render
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/yenole/duicat"
 	"io"
 	"net/http"
 )
 
-func JSON(handle HandlerRenderFunc) http.HandlerFunc {
+func JSON(handle duicat.HandlerRenderFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		stdout, stderr := bytes.NewBuffer([]byte{}), bytes.NewBuffer([]byte{})
 
 		defer func() {
+			w.Header().Add("content-type", "application/json")
 			if stderr.Len() > 0 {
 				_, _ = io.WriteString(w, fmt.Sprintf(`{"ret":false,"data":"%v"}`, stderr.String()))
 			} else if stdout.Len() > 0 {
@@ -48,4 +50,8 @@ func JSON(handle HandlerRenderFunc) http.HandlerFunc {
 		}
 
 	}
+}
+
+func Plain() {
+
 }
