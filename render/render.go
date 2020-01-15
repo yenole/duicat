@@ -52,6 +52,29 @@ func JSON(handle duicat.HandlerRenderFunc) http.HandlerFunc {
 	}
 }
 
-func Plain() {
+func Plain(handle duicat.HandlerRenderFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		buffer := bytes.NewBuffer([]byte{})
 
+		defer func() {
+			w.Header().Add("content-type", "text/plain")
+			if buffer.Len() > 0 {
+				_, _ = w.Write(buffer.Bytes())
+			}
+			buffer.Reset()
+		}()
+
+		defer func() {
+			if err := recover(); err != nil {
+				buffer.WriteString(fmt.Sprint(err))
+			}
+		}()
+
+		data, err := handle(w, r)
+		if err != nil {
+			buffer.WriteString(err.Error())
+			return
+		}
+		buffer.WriteString(fmt.Sprint(data))
+	}
 }
