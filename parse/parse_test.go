@@ -1,7 +1,6 @@
 package parse
 
 import (
-	"fmt"
 	"github.com/yenole/easy-go"
 	"net/http"
 	"testing"
@@ -12,7 +11,7 @@ type ReqLogin struct {
 }
 
 func (r ReqLogin) handleLogin(login *ReqLogin, token string, a int16) (interface{}, error) {
-	panic(fmt.Errorf("error"))
+	//panic(fmt.Errorf("error"))
 	return 10000, nil
 }
 

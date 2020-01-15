@@ -27,7 +27,7 @@ func Param(handle interface{}, params ...string) easy_go.HandlerRenderFunc {
 	handleValue := reflect.ValueOf(handle)
 
 	return func(w http.ResponseWriter, r *http.Request) (interface{}, error) {
-		values, err := fetchParams(r, handleType, 0, params...)
+		values, err := fetchParams(r, handleType, 0, params)
 		if err != nil {
 			return nil, err
 		}
@@ -100,15 +100,16 @@ func fetchParams(r *http.Request, el reflect.Type, skip int, params []string) ([
 	for i := skip; i < el.NumIn(); i++ {
 		if el.In(i).Kind() == reflect.String {
 			values[i-skip] = reflect.ValueOf(query.Get(params[i-skip]))
-		} else {
+		} else if len(query.Get(params[i-skip])) > 0 {
 			var ret = reflect.New(el.In(i))
 			err := json.Unmarshal([]byte(query.Get(params[i-skip])), ret.Interface())
 			if err != nil {
 				return nil, err
 			}
 			values[i-skip] = ret.Elem()
+		} else {
+			values[i-skip] = reflect.New(el.In(i)).Elem()
 		}
-
 	}
 	return values, nil
 }
