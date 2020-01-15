@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/yenole/duicat"
-	"github.com/yenole/duicat/parse"
-	"github.com/yenole/duicat/render"
 	"net/http"
 )
 
@@ -46,10 +44,10 @@ func main() {
 	dc := duicat.NewDuiCat()
 	dc.Group("/v1").
 		Get("h1", handler.h1).
-		Get("h2", render.JSON(handler.h2)).
-		Get("h3", render.JSON(parse.Param(handler.h3, "name", "age"))).
-		Post("json", render.JSON(parse.JSON(handler.json, (*login)(nil), "token"))).
-		Get("err", render.JSON(parse.Param(handler.err, "token")))
+		Get("h2", duicat.RJSON(handler.h2)).
+		Get("h3", duicat.RJSON(duicat.P(handler.h3, "name", "age"))).
+		Post("json", duicat.RJSON(duicat.PJSON(handler.json, (*login)(nil), "token"))).
+		Get("err", duicat.RJSON(duicat.PJSON(handler.err, "token")))
 
 	dc.HandleGroup("/v2", duicat.MethodPost, func(writer http.ResponseWriter, request *http.Request) {
 		_, _ = writer.Write([]byte("v2"))
